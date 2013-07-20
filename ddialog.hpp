@@ -1,3 +1,5 @@
+#pragma once
+
 #include "plugin.hpp"
 #include "tags.hpp"
 
