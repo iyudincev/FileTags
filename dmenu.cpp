@@ -46,9 +46,7 @@ bool DescrMenu::show() {
 				m_tagsToClear.erase(cursorTag);
 				break;
 			case -1: //Enter
-				if (items[cursor].Flags | MIF_SELECTED &&
-					(items[cursor].Flags & 0xFFFF) != '-')
-				{
+				if ((items[cursor].Flags & 0xFFFF) != '-') {
 					m_tagsToSet.insert(cursorTag);
 					m_tagsToClear.erase(cursorTag);
 				}

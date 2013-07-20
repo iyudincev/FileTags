@@ -37,10 +37,11 @@ public:
 		hFile = INVALID_HANDLE_VALUE;
 	}
 
-	DWORD getSize() const {
+	LONGLONG getSize() const {
+		LARGE_INTEGER size={0};
 		if (isOpened())
-			return GetFileSize(hFile, nullptr);
-		return 0xFFFFFFFF;
+			GetFileSizeEx(hFile, &size);
+		return size.QuadPart;
 	}
 };
 
@@ -129,7 +130,7 @@ public:
 		return view.value();
 	}
 
-	DWORD getSize() const {
+	LONGLONG getSize() const {
 		return file.getSize();
 	}
 };

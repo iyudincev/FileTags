@@ -54,7 +54,7 @@ intptr_t Panel::changeDir(const wchar_t *delta) {
 		updateVisibleItems();
 		setCursor(cursor);
 	}
-	return true;
+	return TRUE;
 }
 
 bool Panel::read() {

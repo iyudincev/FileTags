@@ -323,6 +323,7 @@
     <ClInclude Include="dmenu.hpp" />
     <ClInclude Include="dmodel.hpp" />
     <ClInclude Include="folder.hpp" />
+    <ClInclude Include="mapping.hpp" />
     <ClInclude Include="mix.hpp" />
     <ClInclude Include="filetagslng.hpp" />
     <ClInclude Include="guid.hpp" />

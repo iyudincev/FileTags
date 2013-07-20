@@ -13,9 +13,14 @@ void Descr::load(const std::wstring &filename) {
 	if (!m.open(filename.c_str()))
 		return;
 
+	LONGLONG llFileSize = m.getSize();
+	if (llFileSize >= 0x40000000ULL)
+		return;
+	size_t fileSize = static_cast<size_t>(llFileSize);
+
 	std::vector<wchar_t> buf;
-	buf.resize(m.getSize() * 2);
-	if (MultiByteToWideChar(CP_OEMCP, 0, m.value(), (int)m.getSize(), &buf[0], (int)buf.size()) == 0)
+	buf.resize(fileSize * 2);
+	if (MultiByteToWideChar(CP_OEMCP, 0, m.value(), (int)fileSize, &buf[0], (int)buf.size()) == 0)
 		return;
 
 	enum {FILENAME, QUOTE, SPACE, DESCR} state = FILENAME;
@@ -106,7 +111,7 @@ bool Descr::save(const std::wstring &filename) const {
 
 	int sizeRequired = WideCharToMultiByte(CP_OEMCP, 0, text.c_str(), (int)text.size(),
 										   nullptr, 0, nullptr, nullptr);
-	if (sizeRequired == 0)
+	if (sizeRequired <= 0)
 		return true;
 
 	char *buf = new char[sizeRequired];
@@ -138,7 +143,7 @@ void Descr::modify(const std::set<std::wstring> &selectedFiles,
 	const Tags &tagsToSet, const Tags &tagsToClear)
 {
 	for (std::set<std::wstring>::const_iterator it = selectedFiles.begin(); 
-		it != selectedFiles.end(); it++) 
+		it != selectedFiles.end(); ++it) 
 	{
 		Item2tags::iterator itEntry = m_item2tags.find(*it);
 		Tags &itemTags = (*itEntry).second;
@@ -154,7 +159,7 @@ void Descr::modify(const std::set<std::wstring> &selectedFiles,
 	const Tags &newTags)
 {
 	for (std::set<std::wstring>::const_iterator it = selectedFiles.begin(); 
-		it != selectedFiles.end(); it++) 
+		it != selectedFiles.end(); ++it) 
 	{
 		Item2tags::iterator itEntry = m_item2tags.find(*it);
 		if (newTags.empty())
