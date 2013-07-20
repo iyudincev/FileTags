@@ -1,0 +1,109 @@
+﻿.Language=English,English
+.PluginContents=FileTags
+
+@Contents
+$   #FileTags 1.3 for FAR Manager 3#
+
+   The plugin implements file tags management within a single directory.
+File tags are stored in file descriptions; the plugin takes the description of
+a file as a set of comma-separated tags.
+
+   Features:
+
+   - browsing the ~plugin panel~@Panel@ with filtering the directory contents
+by tags;
+   - calling the plugin from the ~command line~@CommandLine@;
+   - copying files to the ~plugin panel~@Panel@ applies current tags;
+   - ~editing the tags~@Description@ of selected files;
+   - ~creating~@CreateTag@ and removing tags in the ~plugin panel~@Panel@.
+
+
+ ~Plugin settings~@Config@
+
+   _____________________________
+
+   (c) Igor Yudincev, 2013
+   Email: igor.yudincev@@gmail.com
+
+@Panel
+$   #Plugin panel#
+
+   The plugin panel contains the directory files (no subdirectories) filtered
+by chosen tags. The filter is displayed in the caption of the panel. The tags
+that can be used for further filtering are shown as virtual folders; entering
+such a folder adds the tag to the filter.
+
+   Common file actions are available in the panel. Copying files to the panel
+means copying them to the current directory, then the files are assigned the
+tags from the working plugin panel filter.
+
+   Press #F7# to ~create~@CreateTag@ a new tag.
+
+   #F8# on a tag removes it from all files shown on panel at the moment.
+
+   Tags cannot be renamed with F6; use the ~tags editing dialog~@Description@ (CtrlZ)
+for these operations.
+
+@CommandLine
+$   #Calling plugin from command line#
+
+   The following line opens the ~plugin panel~@Panel@ and sets tag1 and tag2 as the
+working tag filter for files:
+
+   tags:tag1,tag2
+
+
+ ~Features~@Contents@
+
+@CreateTag
+$   #Tag creation dialog#
+
+   The dialog is invoked from the ~plugin panel~@Panel@ with #F7#. Entered tags
+are added to the panel filter. Multiple tags can be entered, separated with commas.
+
+
+ ~Features~@Contents@
+
+@Description
+$   #Tags editing dialog#
+
+   The dialog is invoked from the ~plugin panel~@Panel@ with #CtrlZ#. Two tag lists,
+tags to add and tags to remove, are available for editing; the former one gets
+the list of tags, which are common for all selected files, as the default text.
+Checked option #Replace existing tags# means that the tags of each selected file
+will be replaced with the list from #Add tags:# text field.
+
+   If plugin panel selection includes virtual "subfolders" (i.e. tags) then the
+dialog action is applied to all selected files and also files which belong to
+those "subfolders".
+
+   #Select...# button invokes the ~tags selection menu~@DescriptionMenu@.
+
+
+ ~Features~@Contents@
+
+@DescriptionMenu
+$   #Tags selection menu#
+
+   The menu allows selection of tags for the ~tags editing dialog~@Description@. It
+shows all tags in the directory. The tags found in #Add tags:# and #Remove tags:#
+fields are marked with #+# and #-# symbols respectively.
+
+   +, - and Space keys control menu items selection.
+
+   Enter key closes the menu and copies selected tags to the corresponding fields
+of the ~tags editing~@Description@ dialog; if the chosen tag has no symbol mark,
+it is also copied to #Add tags:# text field.
+
+
+ ~Features~@Contents@
+
+@Config
+$   #Plugin settings#
+
+  #Remember panel mode# - store the user-selected panel mode and restore it
+                           next time the plugin is opened. When the option is
+                           off, the current file panel mode is used.
+
+
+ ~Features~@Contents@

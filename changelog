@@ -1,0 +1,14 @@
+1.3 09.07.2013 
++ F7 creates tags
+* tags validity check
+* one tag history for all text fields
+
+1.2 09.07.2013 
+- crash on Windows XP
+- LNG fix
+
+1.1 09.07.2013 
++ descript.ion write error message
+
+1.0 08.07.2013 
++ Initial release
