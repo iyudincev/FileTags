@@ -53,7 +53,7 @@ void WINAPI ClosePanelW(const ClosePanelInfo *Info)
 	if(Info->StructSize < sizeof(ClosePanelInfo))
 		return;
 
-	Panel *panel = (Panel *)Info->hPanel;
+	Panel *panel = reinterpret_cast<Panel *>(Info->hPanel);
 	delete panel;
 }
 
@@ -69,7 +69,7 @@ intptr_t WINAPI GetFindDataW(GetFindDataInfo *Info)
 	if(!Info->hPanel || INVALID_HANDLE_VALUE == Info->hPanel)
 		return FALSE;
 
-	Panel *panel = (Panel *)Info->hPanel;
+	Panel *panel = reinterpret_cast<Panel *>(Info->hPanel);
 	panel->capture(&Info->ItemsNumber, &Info->PanelItem);
 	return TRUE;
 }
@@ -80,7 +80,7 @@ void WINAPI FreeFindDataW(const FreeFindDataInfo *Info)
 	if(Info->StructSize < sizeof(FreeFindDataInfo))
 		return;
 
-	Panel *panel = (Panel *)Info->hPanel;
+	Panel *panel = reinterpret_cast<Panel *>(Info->hPanel);
 	panel->release();
 }
 
@@ -90,8 +90,8 @@ void WINAPI GetOpenPanelInfoW(OpenPanelInfo *Info)
 	if(Info->StructSize < sizeof(OpenPanelInfo))
 		return;
 
-	Panel *panel = (Panel *)Info->hPanel;
-	Info->Flags=OPIF_ADDDOTS|OPIF_REALNAMES|OPIF_SHOWNAMESONLY|OPIF_USEATTRHIGHLIGHTING;
+	Panel *panel = reinterpret_cast<Panel *>(Info->hPanel);
+	Info->Flags = OPIF_ADDDOTS|OPIF_REALNAMES|OPIF_SHOWNAMESONLY|OPIF_USEATTRHIGHLIGHTING;
 	Info->CurDir = panel->buildPrompt();
 	Info->PanelTitle=panel->buildCaption();
 	if (Opt.StorePanelMode)
@@ -110,7 +110,7 @@ intptr_t WINAPI SetDirectoryW(const SetDirectoryInfo *Info)
 	if(!Info->hPanel || INVALID_HANDLE_VALUE == Info->hPanel)
 		return FALSE;
 
-	Panel *panel = (Panel *)Info->hPanel;
+	Panel *panel = reinterpret_cast<Panel *>(Info->hPanel);
 	return panel->changeDir(Info->Dir);
 }
 
@@ -120,7 +120,7 @@ intptr_t WINAPI ProcessPanelInputW(const ProcessPanelInputInfo *Info)
 	if (Info->StructSize < sizeof(ProcessPanelInputInfo))
 		return 0;
 
-	Panel *panel = (Panel *)Info->hPanel;
+	Panel *panel = reinterpret_cast<Panel *>(Info->hPanel);
 	return panel->ProcessKey(&Info->Rec);
 }
 
@@ -130,7 +130,7 @@ intptr_t WINAPI ProcessPanelEventW(const ProcessPanelEventInfo *Info)
 	if (Info->StructSize < sizeof(ProcessPanelEventInfo))
 		return 0;
 
-	Panel *panel = (Panel *)Info->hPanel;
+	Panel *panel = reinterpret_cast<Panel *>(Info->hPanel);
 	return panel->ProcessEvent(Info->Event, Info->Param);
 }
 
@@ -140,6 +140,6 @@ intptr_t WINAPI ProcessSynchroEventW(const ProcessSynchroEventInfo *Info)
 	if (Info->StructSize < sizeof(ProcessSynchroEventInfo))
 		return 0;
 
-	Panel *panel = (Panel *)Info->Param;
+	Panel *panel = reinterpret_cast<Panel *>(Info->Param);
 	return panel->ProcessSync(Info->Event);
 }

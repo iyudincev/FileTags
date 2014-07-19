@@ -6,7 +6,9 @@
 #include "mix.hpp"
 
 
-Panel::Panel() {
+Panel::Panel() :
+	cursorPos(0)
+{
 	folder = new Folder();
 	dcn = new DirChangeNotifier(folder->getDirName().c_str(), this);
 }
@@ -17,29 +19,29 @@ Panel::~Panel() {
 }
 
 void Panel::saveDescr() const {
-	if (!descr.save(getDescrPath())) {
+	if (!db.save(getDescrPath())) {
 		static const wchar_t * items[] = {
 			GetMsg(MSaveError),
 			GetMsg(MOk),
 		};
-		::Info.Message(&MainGuid, &SaveErrorGuid, 
-			FMSG_WARNING | FMSG_ERRORTYPE, nullptr, 
+		::Info.Message(&MainGuid, &SaveErrorGuid,
+			FMSG_WARNING | FMSG_ERRORTYPE, nullptr,
 			items, ARRAYSIZE(items), 1);
 	}
 }
 
 std::wstring Panel::getDescrPath() const {
-	return folder->getDirName() + L"\\" + Descr::FILENAME;
+	return folder->getDirName() + L"\\" + DescrDb::DIZ_FILENAME;
 }
 
 bool Panel::openFromMainMenu() {
-	descr.load(getDescrPath());
+	db.load(getDescrPath());
 	read();
 	return true;
 }
 
 bool Panel::openFromCommandLine(const std::wstring &cmd) {
-	descr.load(getDescrPath());
+	db.load(getDescrPath());
 	followTags(cmd);
 	read();
 	return true;
@@ -100,6 +102,7 @@ std::wstring Panel::followTags(const std::wstring &delta) {
 
 void Panel::updateVisibleItems() {
 	visibleItems.clear();
+	visibleItems.reserve(folder->getItems().size());
 
 	Tags tmpTags;
 
@@ -109,16 +112,16 @@ void Panel::updateVisibleItems() {
 
 		std::wstring filename(ppi.FileName);
 		std::wstring path = folder->getDirName() + L"\\" + filename;
-		const Tags &fileTags = descr.getTagsByName(filename);
-
-		PluginPanelItem shownItem = ppi;
-		shownItem.FileName          = _wcsdup(path.c_str());
-		shownItem.AlternateFileName = _wcsdup(ppi.AlternateFileName);
-		shownItem.Description       = _wcsdup(fileTags.toString().c_str());
-		shownItem.Owner             = _wcsdup(ppi.Owner);
-		shownItem.CustomColumnData  = nullptr;
+		const Tags &fileTags = db.getTagsByName(filename);
 
 		if (fileTags.includes(filterTags)) {
+			PluginPanelItem shownItem = ppi;
+			shownItem.FileName = _wcsdup(path.c_str());
+			shownItem.AlternateFileName = _wcsdup(ppi.AlternateFileName);
+			shownItem.Description = _wcsdup(db.getColumnTextByName(filename).c_str());
+			shownItem.Owner = _wcsdup(ppi.Owner);
+			shownItem.CustomColumnData = nullptr;
+
 			visibleItems.add(shownItem);
 			for (Tags::const_iterator it = fileTags.begin(); it != fileTags.end(); ++it)
 				if (filterTags.find(*it) == filterTags.end())
@@ -222,27 +225,23 @@ intptr_t Panel::ProcessEvent(intptr_t Event, void *Param) {
 			bool bModified = false;
 
 			//remove the descriptions of deleted files from descript.ion
-			long long deleted = 0;
 			for (PluginPanelItems::const_iterator it = folder->getItems().begin(); it != folder->getItems().end(); ++it) {
 				const PluginPanelItem &ppi = *it;
 				std::wstring filename(ppi.FileName);
 				if (!newFolder->contains(filename)) {
-					descr.erase(filename);
+					db.erase(filename);
 					bModified = true;
-					deleted++;
 				}
 			}
 
 			//assign descriptions to new files
-			long long added = 0;
 			if (!filterTags.empty()) {
 				for (PluginPanelItems::const_iterator it = newFolder->getItems().begin(); it != newFolder->getItems().end(); ++it) {
 					const PluginPanelItem &ppi = *it;
 					std::wstring filename(ppi.FileName);
 					if (!folder->contains(filename)) {
-						descr.insert(filename, filterTags);
+						db.insert(filename, filterTags);
 						bModified = true;
-						added++;
 					}
 				}
 			}
@@ -251,7 +250,7 @@ intptr_t Panel::ProcessEvent(intptr_t Event, void *Param) {
 			delete newFolder;
 
 			if (bModified) {
-				descr.refreshTags();
+				db.refreshTags();
 				saveDescr();
 			}
 
@@ -273,7 +272,7 @@ void Panel::createTag() {
 	wchar_t buf[1024];
 	if (::Info.InputBox(&MainGuid, &CreateTagGuid, GetMsg(MCreateTagTitle),
 						GetMsg(MCreateTagSubTitle), L"Tags", nullptr,
-						buf, ARRAYSIZE(buf), L"CreateTag", 
+						buf, ARRAYSIZE(buf), L"CreateTag",
 						FIB_NOUSELASTHISTORY | FIB_BUTTONS))
 	{
 		std::wstring tag(buf);
@@ -288,8 +287,9 @@ void Panel::createTag() {
 
 void Panel::editTags() {
 	std::set<std::wstring> selectedFiles;
-	Tags commonTags = descr.getTags();
+	Tags commonTags = db.getTags();
 	Tags removedTags;
+	std::wstring dizText;
 
 	PanelInfo pi = {sizeof(PanelInfo)};
 	::Info.PanelControl(this, FCTL_GETPANELINFO, 0, &pi);
@@ -300,7 +300,7 @@ void Panel::editTags() {
 	//leave only tags that appear in each selected item
 	for (size_t i=0; i<pi.SelectedItemsNumber; i++) {
 		size_t size = ::Info.PanelControl(this, FCTL_GETSELECTEDPANELITEM, i, 0);
-		PluginPanelItem* ppi = (PluginPanelItem*)malloc(size);
+		PluginPanelItem* ppi = reinterpret_cast<PluginPanelItem*>(malloc(size));
 		if (ppi) {
 			FarGetPluginPanelItem gpi = {sizeof(FarGetPluginPanelItem), size, ppi};
 			::Info.PanelControl(this, FCTL_GETSELECTEDPANELITEM, i, &gpi);
@@ -311,10 +311,14 @@ void Panel::editTags() {
 				for (PluginPanelItems::const_iterator it=visibleItems.begin(); it != visibleItems.end(); ++it) {
 					if (!((*it).FileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
 						std::wstring path((*it).FileName);
-						std::wstring filename = Descr::extractFileName(path); //visibleItems contain full paths to files
-						const Tags &itemTags = descr.getTagsByName(filename);
+						std::wstring filename = DescrDb::extractFileName(path); //visibleItems contain full paths to files
+						const Tags &itemTags = db.getTagsByName(filename);
 						if (itemTags.find(tag) != itemTags.end()) {
 							selectedFiles.insert(filename);
+							if (selectedFiles.size() == 1)
+								dizText = db.getDizByName(filename);
+							else
+								dizText.clear();
 							commonTags *= itemTags;
 						}
 					}
@@ -322,26 +326,32 @@ void Panel::editTags() {
 			}
 			else {
 				std::wstring path(ppi->FileName);
-				std::wstring filename = Descr::extractFileName(path);
+				std::wstring filename = DescrDb::extractFileName(path);
 				selectedFiles.insert(filename);
-				commonTags *= descr.getTagsByName(filename);
+				if (selectedFiles.size() == 1)
+					dizText = db.getDizByName(filename);
+				else
+					dizText.clear();
+				commonTags *= db.getTagsByName(filename);
 			}
 
 			free(ppi);
 		}
 	}
 
-	DescrDialog dlg(descr.getTags(), commonTags, removedTags);
+	bool bModifyText = !Opt.Separator.empty() && selectedFiles.size() == 1;
+	DescrDialog dlg(db.getTags(), bModifyText,
+		commonTags, removedTags, dizText);
 	switch (dlg.show()) {
 	case DescrDialog::SET:
-		descr.modify(selectedFiles, commonTags, removedTags);
+		db.modify(selectedFiles, bModifyText, dizText, commonTags, removedTags);
 		updateVisibleItems();
 		::Info.PanelControl(this, FCTL_UPDATEPANEL, 1, nullptr);
 		::Info.PanelControl(this, FCTL_REDRAWPANEL, 0, nullptr);
 		saveDescr();
 		break;
 	case DescrDialog::REPLACE:
-		descr.modify(selectedFiles, commonTags);
+		db.modify(selectedFiles, bModifyText, dizText, commonTags);
 		updateVisibleItems();
 		::Info.PanelControl(this, FCTL_UPDATEPANEL, 1, nullptr);
 		::Info.PanelControl(this, FCTL_REDRAWPANEL, 0, nullptr);
@@ -364,14 +374,14 @@ bool Panel::processDeletion() {
 	if (pi.SelectedItemsNumber == 1) {
 		bool res = false;
 		size_t size = ::Info.PanelControl(this, FCTL_GETSELECTEDPANELITEM, 0, nullptr);
-		PluginPanelItem* ppi = (PluginPanelItem*)malloc(size);
+		PluginPanelItem* ppi = reinterpret_cast<PluginPanelItem*>(malloc(size));
 		if (ppi) {
 			FarGetPluginPanelItem gpi = {sizeof(FarGetPluginPanelItem), size, ppi};
 			::Info.PanelControl(this, FCTL_GETSELECTEDPANELITEM, 0, &gpi);
 
 			if (ppi->FileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
 				tags.insert(std::wstring(ppi->FileName));
-				deleteTags(tags);
+				removeTags(tags);
 				res = true;
 			}
 
@@ -386,7 +396,7 @@ bool Panel::processDeletion() {
 
 	for (size_t i=0; i<pi.ItemsNumber; i++) {
 		size_t size = ::Info.PanelControl(this, FCTL_GETPANELITEM, i, 0);
-		PluginPanelItem* ppi = (PluginPanelItem*)malloc(size);
+		PluginPanelItem* ppi = reinterpret_cast<PluginPanelItem*>(malloc(size));
 		if (ppi) {
 			FarGetPluginPanelItem gpi = {sizeof(FarGetPluginPanelItem), size, ppi};
 			::Info.PanelControl(this, FCTL_GETPANELITEM, i, &gpi);
@@ -409,7 +419,7 @@ bool Panel::processDeletion() {
 		return false;
 
 	if (fileItemNumbers.empty()) {   //no selected files, handle the deletion
-		deleteTags(tags);
+		removeTags(tags);
 		return true;
 	}
 
@@ -424,22 +434,21 @@ bool Panel::processDeletion() {
 	return false;
 }
 
-void Panel::deleteTags(const Tags &tags) {
+void Panel::removeTags(const Tags &tags) {
 	static const wchar_t * items[] = {
 		GetMsg(MDeleteCaption),
 		GetMsg(MDeletePrompt),
 	};
 	if (::Info.Message(&MainGuid, &DeletePromptGuid, FMSG_MB_OKCANCEL, nullptr, items, ARRAYSIZE(items), 2) == 0) {
 		std::set<std::wstring> affectedFiles;
-		Tags tagsToSet;
 		for (PluginPanelItems::const_iterator it=visibleItems.begin(); it != visibleItems.end(); ++it) {
 			if (!((*it).FileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
 				std::wstring path((*it).FileName);
-				std::wstring filename = Descr::extractFileName(path); //visibleItems contain full paths to files
+				std::wstring filename = DescrDb::extractFileName(path); //visibleItems contain full paths to files
 				affectedFiles.insert(filename);
 			}
 		}
-		descr.modify(affectedFiles, tagsToSet, tags);
+		db.removeTags(affectedFiles, tags);
 		updateVisibleItems();
 		::Info.PanelControl(this, FCTL_UPDATEPANEL, 1, nullptr);
 		::Info.PanelControl(this, FCTL_REDRAWPANEL, 0, nullptr);

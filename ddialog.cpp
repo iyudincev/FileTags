@@ -6,34 +6,35 @@
 #include "mix.hpp"
 
 
-DescrDialog::DescrDialog(const Tags &tags, Tags &tagsToSet, Tags &tagsToClear) :
-	m_tags(tags), m_tagsToSet(tagsToSet), m_tagsToClear(tagsToClear),
+DescrDialog::DescrDialog(const Tags &tags, bool dizEnabled, 
+	Tags &tagsToSet, Tags &tagsToClear, std::wstring &text) :
+	m_tags(tags), m_dizEnabled(dizEnabled),
+	m_tagsToSet(tagsToSet), m_tagsToClear(tagsToClear),
+	m_text(text),
 	m_hDlg(INVALID_HANDLE_VALUE)
 {
 	static FarDialogItem DlgItems[]={
-		/* 0*/ {DI_DOUBLEBOX,3, 1,67, 9, {0},nullptr     ,nullptr   ,0                                ,GetMsg(MDescrTitle)},
+		/* 0*/ {DI_DOUBLEBOX,3, 1,67,11, {0},nullptr     ,nullptr   ,0                                ,GetMsg(MDescrTitle)},
 		/* 1*/ {DI_TEXT     ,6, 2, 0, 0, {0},nullptr     ,nullptr   ,0                                ,GetMsg(MDescrSet)},
 		/* 2*/ {DI_EDIT     ,5, 3,64, 0, {1},L"Tags"     ,nullptr   ,DIF_HISTORY                      ,L""},
 		/* 3*/ {DI_CHECKBOX ,5, 4, 0, 0, {0},0           ,nullptr   ,0                                ,GetMsg(MDescrReplace)},
 		/* 4*/ {DI_TEXT     ,6, 5, 0, 0, {0},nullptr     ,nullptr   ,0                                ,GetMsg(MDescrClear)},
 		/* 5*/ {DI_EDIT     ,5, 6,64, 0, {1},L"Tags"     ,nullptr   ,DIF_HISTORY                      ,L""},
-		/* 6*/ {DI_TEXT     ,0, 7, 0, 0, {0},nullptr     ,nullptr   ,DIF_SEPARATOR                    ,L""},
-		/* 7*/ {DI_BUTTON   ,0, 8, 0, 0, {0},0           ,nullptr   ,DIF_CENTERGROUP|DIF_DEFAULTBUTTON,GetMsg(MOk)},
-		/* 8*/ {DI_BUTTON   ,0, 8, 0, 0, {0},0           ,nullptr   ,DIF_CENTERGROUP                  ,GetMsg(MCancel)},
-		/* 9*/ {DI_BUTTON   ,0, 8, 0, 0, {0},0           ,nullptr   ,DIF_CENTERGROUP                  ,GetMsg(MDescrSelect)},
+		/* 6*/ {DI_TEXT     ,6, 7, 0, 0, {0},nullptr     ,nullptr   ,0                                ,GetMsg(MDescrText)},
+		/* 7*/ {DI_EDIT     ,5, 8,64, 0, {0},L"DizText"  ,nullptr   ,DIF_HISTORY                      ,L""},
+		/* 8*/ {DI_TEXT     ,0, 9, 0, 0, {0},nullptr     ,nullptr   ,DIF_SEPARATOR                    ,L""},
+		/* 9*/ {DI_BUTTON   ,0,10, 0, 0, {0},0           ,nullptr   ,DIF_CENTERGROUP|DIF_DEFAULTBUTTON,GetMsg(MOk)},
+		/*10*/ {DI_BUTTON   ,0,10, 0, 0, {0},0           ,nullptr   ,DIF_CENTERGROUP                  ,GetMsg(MCancel)},
+		/*11*/ {DI_BUTTON   ,0,10, 0, 0, {0},0           ,nullptr   ,DIF_CENTERGROUP                  ,GetMsg(MDescrSelect)},
 	};
 
-	std::wstring sSet = m_tagsToSet.toString();
-	DlgItems[IX_TAGS_SET].Data = sSet.c_str();
-
-	std::wstring sClear = m_tagsToClear.toString();
-	DlgItems[IX_TAGS_CLEAR].Data = sClear.c_str();
-
 	m_hDlg = ::Info.DialogInit(&MainGuid, &DescrDlgGuid,
-		-1, -1, 71, 11,
+		-1, -1, 71, 13,
 		L"Description", DlgItems, ARRAYSIZE(DlgItems),
 		0, 0,
 		dlgWrapper, this);
+
+	setEditFields();
 }
 
 DescrDialog::~DescrDialog() {
@@ -46,11 +47,19 @@ void DescrDialog::setEditFields() {
 
 	std::wstring sClear = m_tagsToClear.toString();
 	::Info.SendDlgMessage(m_hDlg, DM_SETTEXTPTR, IX_TAGS_CLEAR, (void *)sClear.c_str());
+
+	if (m_dizEnabled)
+		::Info.SendDlgMessage(m_hDlg, DM_SETTEXTPTR, IX_DIZ, (void *)m_text.c_str());
+
+	::Info.SendDlgMessage(m_hDlg, DM_ENABLE, IX_DIZ_T, (void *)((m_dizEnabled) ? TRUE : FALSE));
+	::Info.SendDlgMessage(m_hDlg, DM_ENABLE, IX_DIZ, (void *)((m_dizEnabled) ? TRUE : FALSE));
 }
 
 void DescrDialog::applyEditFields() {
 	m_tagsToSet.load(getEditedText(IX_TAGS_SET));
 	m_tagsToClear.load(getEditedText(IX_TAGS_CLEAR));
+	if (m_dizEnabled)
+		m_text = getEditedText(IX_DIZ);
 }
 
 std::wstring DescrDialog::getEditedText(DescrDialog::ItemIndex index) {

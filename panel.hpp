@@ -36,7 +36,7 @@ private:
 	PluginPanelItems capturedItems;
 	std::wstring prompt;
 	std::wstring caption;
-	Descr descr;
+	DescrDb db;
 	Folder *folder;
 	DirChangeNotifier *dcn;
 	size_t cursorPos;
@@ -52,5 +52,5 @@ private:
 	void createTag();
 	void editTags();
 	bool processDeletion();
-	void deleteTags(const Tags &tags);
+	void removeTags(const Tags &tags);
 };

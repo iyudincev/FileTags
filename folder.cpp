@@ -4,15 +4,16 @@
 
 Folder::Folder() {
 	size_t bufSize = ::Info.PanelControl(PANEL_ACTIVE, FCTL_GETPANELDIRECTORY, 0, nullptr);
-	FarPanelDirectory* dirInfo=(FarPanelDirectory*)malloc(bufSize);
+	FarPanelDirectory* dirInfo = reinterpret_cast<FarPanelDirectory*>(malloc(bufSize));
 	dirInfo->StructSize = sizeof(FarPanelDirectory);
 	::Info.PanelControl(PANEL_ACTIVE, FCTL_GETPANELDIRECTORY, bufSize, dirInfo);
 	dirName = std::wstring(dirInfo->Name);
 	free(dirInfo);
 }
 
-Folder::Folder(const std::wstring &dir) {
-	dirName = dir;
+Folder::Folder(const std::wstring &dir) :
+	dirName(dir)
+{
 }
 
 bool Folder::read() {

@@ -1,12 +1,46 @@
 #include <vector>
 #include "dmodel.hpp"
 #include "mapping.hpp"
+#include "mix.hpp"
 
 
-const wchar_t Descr::FILENAME[] = L"Descript.ion";
+const wchar_t DescrDb::DIZ_FILENAME[] = L"Descript.ion";
 
+static void rtrim(std::wstring &s) {
+	s.erase(s.find_last_not_of(L" \n\r\t") + 1);
+}
 
-void Descr::load(const std::wstring &filename) {
+bool DescrDb::ItemData::empty() const {
+	return (Opt.Separator.empty()) ?
+		tags.empty() :
+		text.empty() && tags.empty();
+}
+
+std::wstring DescrDb::getColumnTextByName(const std::wstring &item) {
+	const ItemData &data = m_items[item];
+	std::wstring result;
+	bool bStore = false;
+	if (Opt.Separator.empty()) {
+		if (!data.tags.empty()) {
+			result.append(data.tags.toString());
+		}
+	}
+	else {
+		if (!data.text.empty()) {
+			result.append(data.text);
+		}
+		if (!data.tags.empty()) {
+			if (!result.empty())
+				result.push_back(L' ');
+			result.append(Opt.Separator);
+			result.push_back(L' ');
+			result.append(data.tags.toString());
+		}
+	}
+	return result;
+}
+
+void DescrDb::load(const std::wstring &filename) {
 	clear();
 
 	KFileMapping m;
@@ -23,20 +57,25 @@ void Descr::load(const std::wstring &filename) {
 	if (MultiByteToWideChar(CP_OEMCP, 0, m.value(), (int)fileSize, &buf[0], (int)buf.size()) == 0)
 		return;
 
-	enum {FILENAME, QUOTE, SPACE, DESCR} state = FILENAME;
+	enum {FILENAME, QUOTE, SPACE, DESCR, TAGS} state = FILENAME;
 	std::wstring item;
-	const wchar_t *pBuf = &buf[0];
-	const wchar_t *pItem = pBuf;
+	ItemData data;
+	const wchar_t *pBuf = &buf[0]; //pointer to current character
+	const wchar_t *pItem = pBuf;   //the beginning of currently parsed item
+	const wchar_t *pSeparator;     //current matching character in Separator
+	size_t iSeparator;             //the number of matched characters
 	size_t nBuf = buf.size();
 	for (size_t i=0; i<nBuf; i++, pBuf++) {
+		wchar_t c = *pBuf;
 		switch (state) {
 		case FILENAME:
-			switch (*pBuf) {
+			switch (c) {
 			case L'"':
 				state = QUOTE;
 				pItem = pBuf+1; //skip an opening quote
 				break;
 			case L' ':
+			case L'\t':
 				state = SPACE;
 				item = std::wstring(pItem, pBuf);
 				break;
@@ -48,7 +87,7 @@ void Descr::load(const std::wstring &filename) {
 			break;
 
 		case QUOTE:
-			switch (*pBuf) {
+			switch (c) {
 			case L'"':
 				state = SPACE;
 				item = std::wstring(pItem, pBuf);
@@ -56,34 +95,77 @@ void Descr::load(const std::wstring &filename) {
 			case L'\x0D':
 			case L'\x0A':
 				state = FILENAME;
+				data.clear();
 				pItem = pBuf+1; //skip EOL
 				break;
 			}
 			break;
 
 		case SPACE:
-			if (*pBuf == L'\x0D' || *pBuf == L'\x0A') {
+			switch (c) {
+			case L'\x0D':
+			case L'\x0A':
 				state = FILENAME;
+				data.clear();
 				pItem = pBuf+1; //skip EOL
-			}
-			else if (!iswspace(*pBuf)) {
-				state = DESCR;
+				break;
+			case L' ':
+			case L'\t':
+				break;
+			default:
 				pItem = pBuf;
+				if (Opt.Separator.empty()) {
+					state = TAGS;
+				}
+				else {
+					state = DESCR;
+					pSeparator = Opt.Separator.c_str();
+					iSeparator = 0;
+					goto testSeparatorChar;
+				}
+				break;
 			}
 			break;
 
 		case DESCR:
-			if (*pBuf == L'\x0D' || *pBuf == L'\x0A') {
-				std::wstring description(pItem, pBuf);
+			switch (c) {
+			case L'\x0D':
+			case L'\x0A':
+				data.text = std::wstring(pItem, pBuf);
+				rtrim(data.text);
+				m_items[item] = data;
+				state = FILENAME;
+				data.clear();
+				pItem = pBuf + 1; //skip EOL
+				break;
+			default:
+testSeparatorChar:
+				if (c == *pSeparator) {
+					pSeparator++;
+					if (++iSeparator == Opt.Separator.size()) {
+						data.text = std::wstring(pItem, pBuf - iSeparator + 1);
+						rtrim(data.text);
+						state = TAGS;
+						pItem = pBuf + 1;
+					}
+				}
+				else {
+					pSeparator = Opt.Separator.c_str();
+					iSeparator = 0;
+				}
+				break;
+			}
+			break;
+
+		case TAGS:
+			if (c == L'\x0D' || c == L'\x0A') {
+				data.tags.load(std::wstring(pItem, pBuf));
+				m_items[item] = data;
+				m_tags += data.tags;
 
 				state = FILENAME;
-
-				Tags itemTags;
-				itemTags.load(description);
-				m_item2tags[item] = itemTags;
-				m_tags += itemTags;
-
-				pItem = pBuf+1; //skip EOL
+				data.clear();
+				pItem = pBuf + 1; //skip EOL
 			}
 			break;
 
@@ -91,16 +173,38 @@ void Descr::load(const std::wstring &filename) {
 	}//for i
 }
 
-bool Descr::save(const std::wstring &filename) const {
+bool DescrDb::save(const std::wstring &filename) const {
 	std::wstring text;
-	for (Item2tags::const_iterator it = m_item2tags.begin(); it != m_item2tags.end(); ++it) {
+	for (Items::const_iterator it = m_items.begin(); it != m_items.end(); ++it) {
 		std::wstring item = (*it).first;
-		const Tags &tags = (*it).second;
-		if (!tags.empty()) {
-			if (item.find(L' ') != std::wstring::npos)
-				item = L"\"" + item + L"\"";
-			std::wstring line = item + L" " + tags.toString() + L"\r\n";
-			text.append(line);
+		const ItemData &data = (*it).second;
+		if (item.find(L' ') != std::wstring::npos)
+			item = L"\"" + item + L"\"";
+		std::wstring line = item;
+		bool bStore = false;
+		if (Opt.Separator.empty()) {
+			if (!data.tags.empty()) {
+				line.push_back(L' ');
+				line.append(data.tags.toString());
+				bStore = true;
+			}
+		}
+		else {
+			if (!data.text.empty()) {
+				line.push_back(L' ');
+				line.append(data.text);
+				bStore = true;
+			}
+			if (!data.tags.empty()) {
+				line.push_back(L' ');
+				line.append(Opt.Separator);
+				line.push_back(L' ');
+				line.append(data.tags.toString());
+				bStore = true;
+			}
+		}
+		if (bStore) {
+			text.append(line + L"\r\n");
 		}
 	}
 
@@ -118,8 +222,8 @@ bool Descr::save(const std::wstring &filename) const {
 	WideCharToMultiByte(CP_OEMCP, 0, text.c_str(), (int)text.size(),
 						buf, sizeRequired, nullptr, nullptr);
 
-	HANDLE hFile = CreateFileW(filename.c_str(), GENERIC_WRITE, 0, nullptr, 
-							(bFileExists) ? TRUNCATE_EXISTING : CREATE_NEW, 
+	HANDLE hFile = CreateFileW(filename.c_str(), GENERIC_WRITE, 0, nullptr,
+							(bFileExists) ? TRUNCATE_EXISTING : CREATE_NEW,
 							0, nullptr);
 	bool res = false;
 	if (hFile != INVALID_HANDLE_VALUE) {
@@ -131,49 +235,70 @@ bool Descr::save(const std::wstring &filename) const {
 	return res;
 }
 
-void Descr::insert(const std::wstring &filename, const Tags &fileTags) {
-	m_item2tags.insert(Item2tags::value_type(filename, fileTags));
+void DescrDb::insert(const std::wstring &filename, const Tags &fileTags) {
+	m_items.insert(Items::value_type(filename, { L"", fileTags }));
 }
 
-void Descr::erase(const std::wstring &filename) {
-	m_item2tags.erase(filename);
+void DescrDb::erase(const std::wstring &filename) {
+	m_items.erase(filename);
 }
 
-void Descr::modify(const std::set<std::wstring> &selectedFiles, 
+void DescrDb::modify(const std::set<std::wstring> &selectedFiles,
+	bool bModifyText, const std::wstring &text,
 	const Tags &tagsToSet, const Tags &tagsToClear)
 {
-	for (std::set<std::wstring>::const_iterator it = selectedFiles.begin(); 
-		it != selectedFiles.end(); ++it) 
+	for (std::set<std::wstring>::const_iterator it = selectedFiles.begin();
+		it != selectedFiles.end(); ++it)
 	{
-		Item2tags::iterator itEntry = m_item2tags.find(*it);
-		Tags &itemTags = (*itEntry).second;
-		itemTags += tagsToSet;
-		itemTags -= tagsToClear;
-		if (itemTags.empty())
-			m_item2tags.erase(itEntry);
+		Items::iterator itEntry = m_items.find(*it);
+		ItemData &data = (*itEntry).second;
+		if (bModifyText)
+			data.text = text;
+		data.tags += tagsToSet;
+		data.tags -= tagsToClear;
+		if (data.empty())
+			m_items.erase(itEntry);
 	}
 	refreshTags();
 }
 
-void Descr::modify(const std::set<std::wstring> &selectedFiles, 
+void DescrDb::modify(const std::set<std::wstring> &selectedFiles,
+	bool bModifyText, const std::wstring &text,
 	const Tags &newTags)
 {
-	for (std::set<std::wstring>::const_iterator it = selectedFiles.begin(); 
-		it != selectedFiles.end(); ++it) 
+	for (std::set<std::wstring>::const_iterator it = selectedFiles.begin();
+		it != selectedFiles.end(); ++it)
 	{
-		Item2tags::iterator itEntry = m_item2tags.find(*it);
-		if (newTags.empty())
-			m_item2tags.erase(itEntry);
-		else
-			(*itEntry).second = newTags;
+		Items::iterator itEntry = m_items.find(*it);
+		ItemData &data = (*itEntry).second;
+		if (bModifyText)
+			data.text = text;
+		data.tags = newTags;
+		if (data.empty())
+			m_items.erase(itEntry);
 	}
 	refreshTags();
 }
 
-void Descr::refreshTags() {
+void DescrDb::removeTags(const std::set<std::wstring> &selectedFiles,
+	const Tags &tags)
+{
+	for (std::set<std::wstring>::const_iterator it = selectedFiles.begin();
+		it != selectedFiles.end(); ++it)
+	{
+		Items::iterator itEntry = m_items.find(*it);
+		ItemData &data = (*itEntry).second;
+		data.tags -= tags;
+		if (data.empty())
+			m_items.erase(itEntry);
+	}
+	refreshTags();
+}
+
+void DescrDb::refreshTags() {
 	m_tags.clear();
-	for (Item2tags::const_iterator it = m_item2tags.begin(); it != m_item2tags.end(); ++it) {
-		const Tags &itemTags = (*it).second;
+	for (Items::const_iterator it = m_items.begin(); it != m_items.end(); ++it) {
+		const Tags &itemTags = (*it).second.tags;
 		m_tags += itemTags;
 	}
 }

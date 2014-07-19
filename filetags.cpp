@@ -65,6 +65,7 @@ void WINAPI SetStartupInfoW(const struct PluginStartupInfo *Info)
 	::Info.FSF=&::FSF;
 
 	PluginSettings settings(MainGuid, ::Info.SettingsControl);
+	Opt.Separator = settings.Get(0, OptionSeparator, L"");
 	Opt.StorePanelMode = settings.Get(0, OptionStorePanelMode, 1);
 	Opt.PanelMode = settings.Get(0, OptionPanelMode, 6);
 }
