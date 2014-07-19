@@ -19,7 +19,7 @@ FILESUBTYPE VFT2_UNKNOWN
    VALUE L"InternalName",PLUGIN_NAME
    VALUE L"OriginalFilename",PLUGIN_FILENAME
    VALUE L"ProductName",PLUGIN_NAME
-   VALUE L"LegalCopyright", L"Copyright © 2013 " PLUGIN_AUTHOR
+   VALUE L"LegalCopyright", L"Copyright © 2014 " PLUGIN_AUTHOR
   }
  }
  BLOCK L"VarFileInfo"
