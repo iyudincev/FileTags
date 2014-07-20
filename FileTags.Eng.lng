@@ -7,11 +7,13 @@
 
 "FileTags: Config"
 "&Remember panel mode"
+"Tag list marker:"
 
 "Set tags"
 "Add tags:"
 "Re&place existing tags"
 "Remove tags:"
+"Description:"
 "&Select..."
 
 "Select tags"
