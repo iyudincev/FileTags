@@ -60,8 +60,8 @@ private:
 		Tags tags;
 
 		void clear() {
-			text.empty();
-			tags.empty();
+			text.clear();
+			tags.clear();
 		}
 		bool empty() const;
 	};
