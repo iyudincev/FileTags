@@ -4,12 +4,12 @@
 #include "plugin.hpp"
 
 struct Options {
-	std::wstring Separator;
+	std::wstring TagMarker;
 	int StorePanelMode;
 	intptr_t PanelMode;
 };
 
-const wchar_t OptionSeparator[] = L"Separator";
+const wchar_t OptionTagMarker[] = L"TagMarker";
 const wchar_t OptionStorePanelMode[] = L"StorePanelMode";
 const wchar_t OptionPanelMode[] = L"PanelMode";
 

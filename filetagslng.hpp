@@ -8,7 +8,7 @@ enum LngFileIndex {
 
 	MConfigTitle,
 	MConfigStorePanelMode,
-	MConfigSeparator,
+	MConfigTagMarker,
 
 	MDescrTitle,
 	MDescrSet,

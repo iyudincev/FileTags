@@ -339,7 +339,7 @@ void Panel::editTags() {
 		}
 	}
 
-	bool bModifyText = !Opt.Separator.empty() && selectedFiles.size() == 1;
+	bool bModifyText = !Opt.TagMarker.empty() && selectedFiles.size() == 1;
 	DescrDialog dlg(db.getTags(), bModifyText,
 		commonTags, removedTags, dizText);
 	switch (dlg.show()) {

@@ -11,7 +11,7 @@ static void rtrim(std::wstring &s) {
 }
 
 bool DescrDb::ItemData::empty() const {
-	return (Opt.Separator.empty()) ?
+	return (Opt.TagMarker.empty()) ?
 		tags.empty() :
 		text.empty() && tags.empty();
 }
@@ -20,7 +20,7 @@ std::wstring DescrDb::getColumnTextByName(const std::wstring &item) {
 	const ItemData &data = m_items[item];
 	std::wstring result;
 	bool bStore = false;
-	if (Opt.Separator.empty()) {
+	if (Opt.TagMarker.empty()) {
 		if (!data.tags.empty()) {
 			result.append(data.tags.toString());
 		}
@@ -32,7 +32,7 @@ std::wstring DescrDb::getColumnTextByName(const std::wstring &item) {
 		if (!data.tags.empty()) {
 			if (!result.empty())
 				result.push_back(L' ');
-			result.append(Opt.Separator);
+			result.append(Opt.TagMarker);
 			result.push_back(L' ');
 			result.append(data.tags.toString());
 		}
@@ -62,8 +62,8 @@ void DescrDb::load(const std::wstring &filename) {
 	ItemData data;
 	const wchar_t *pBuf = &buf[0]; //pointer to current character
 	const wchar_t *pItem = pBuf;   //the beginning of currently parsed item
-	const wchar_t *pSeparator;     //current matching character in Separator
-	size_t iSeparator;             //the number of matched characters
+	const wchar_t *pTagMarker;     //current matching character in TagMarker
+	size_t iTagMarker;             //the number of matched characters
 	size_t nBuf = buf.size();
 	for (size_t i=0; i<nBuf; i++, pBuf++) {
 		wchar_t c = *pBuf;
@@ -114,14 +114,14 @@ void DescrDb::load(const std::wstring &filename) {
 				break;
 			default:
 				pItem = pBuf;
-				if (Opt.Separator.empty()) {
+				if (Opt.TagMarker.empty()) {
 					state = TAGS;
 				}
 				else {
 					state = DESCR;
-					pSeparator = Opt.Separator.c_str();
-					iSeparator = 0;
-					goto testSeparatorChar;
+					pTagMarker = Opt.TagMarker.c_str();
+					iTagMarker = 0;
+					goto testMarkerChar;
 				}
 				break;
 			}
@@ -139,19 +139,19 @@ void DescrDb::load(const std::wstring &filename) {
 				pItem = pBuf + 1; //skip EOL
 				break;
 			default:
-testSeparatorChar:
-				if (c == *pSeparator) {
-					pSeparator++;
-					if (++iSeparator == Opt.Separator.size()) {
-						data.text = std::wstring(pItem, pBuf - iSeparator + 1);
+testMarkerChar:
+				if (c == *pTagMarker) {
+					pTagMarker++;
+					if (++iTagMarker == Opt.TagMarker.size()) {
+						data.text = std::wstring(pItem, pBuf - iTagMarker + 1);
 						rtrim(data.text);
 						state = TAGS;
 						pItem = pBuf + 1;
 					}
 				}
 				else {
-					pSeparator = Opt.Separator.c_str();
-					iSeparator = 0;
+					pTagMarker = Opt.TagMarker.c_str();
+					iTagMarker = 0;
 				}
 				break;
 			}
@@ -182,7 +182,7 @@ bool DescrDb::save(const std::wstring &filename) const {
 			item = L"\"" + item + L"\"";
 		std::wstring line = item;
 		bool bStore = false;
-		if (Opt.Separator.empty()) {
+		if (Opt.TagMarker.empty()) {
 			if (!data.tags.empty()) {
 				line.push_back(L' ');
 				line.append(data.tags.toString());
@@ -197,7 +197,7 @@ bool DescrDb::save(const std::wstring &filename) const {
 			}
 			if (!data.tags.empty()) {
 				line.push_back(L' ');
-				line.append(Opt.Separator);
+				line.append(Opt.TagMarker);
 				line.push_back(L' ');
 				line.append(data.tags.toString());
 				bStore = true;
