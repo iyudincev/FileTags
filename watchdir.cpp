@@ -1,12 +1,14 @@
+#include <process.h>
 #include "watchdir.hpp"
 #include "guid.hpp"
 #include "mix.hpp"
 
 
 DirChangeNotifier::DirChangeNotifier(const wchar_t *path, HANDLE hPanel) :
-	m_path(path), m_hPanel(hPanel), m_fTerminate(false), m_fModified(0)
+	m_path(path), m_hPanel(hPanel), 
+	m_hChangeDir(INVALID_HANDLE_VALUE), m_fTerminate(false), m_fModified(0)
 {
-	m_hTask = CreateThread(
+	m_hTask = (HANDLE)_beginthreadex(
 		nullptr,
 		0x10000,
 		route,
@@ -20,15 +22,17 @@ DirChangeNotifier::~DirChangeNotifier() {
 	if (m_hChangeDir != INVALID_HANDLE_VALUE)
 		FindCloseChangeNotification(m_hChangeDir);
 
-	WaitForSingleObject(m_hTask, INFINITE);
-	CloseHandle(m_hTask);
+	if (m_hTask != 0) {
+		WaitForSingleObject(m_hTask, INFINITE);
+		CloseHandle(m_hTask);
+	}
 }
 
-DWORD WINAPI DirChangeNotifier::route(void* arg) {
+unsigned int WINAPI DirChangeNotifier::route(void* arg) {
 	return reinterpret_cast<DirChangeNotifier*>(arg)->task();
 }
 
-DWORD WINAPI DirChangeNotifier::task() {
+unsigned int WINAPI DirChangeNotifier::task() {
 	m_hChangeDir = FindFirstChangeNotification(
 		m_path,                        // directory to watch
 		FALSE,                         // do not watch subtree
@@ -36,6 +40,7 @@ DWORD WINAPI DirChangeNotifier::task() {
 
 	if (m_hChangeDir == INVALID_HANDLE_VALUE) {
 		OutputDebugStringW(L"ERROR: FindFirstChangeNotification");
+		_endthreadex(0);
 		return 0;
 	}
 
@@ -64,5 +69,6 @@ DWORD WINAPI DirChangeNotifier::task() {
 	if (!m_fTerminate)
 		FindCloseChangeNotification(m_hChangeDir);
 	m_hChangeDir = INVALID_HANDLE_VALUE;
+	_endthreadex(0);
 	return 0;
 }

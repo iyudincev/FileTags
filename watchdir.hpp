@@ -24,6 +24,6 @@ private:
 		return InterlockedBitTestAndSet(&m_fModified, 0) == 0;
 	}
 
-	DWORD WINAPI task();
-	static DWORD WINAPI route(void* arg);
+	unsigned int WINAPI task();
+	static unsigned int WINAPI route(void* arg);
 };
