@@ -21,27 +21,21 @@ HANDLE WINAPI OpenW(const OpenInfo *OInfo)
 	case OPEN_PLUGINSMENU:
 		{
 			Panel *panel = new Panel();
-			if (panel) {
-				if (!panel->openFromMainMenu()) {
-					delete panel;
-					return INVALID_HANDLE_VALUE;
-				}
-				return static_cast<HANDLE>(panel);
+			if (!panel->openFromMainMenu()) {
+				delete panel;
+				return INVALID_HANDLE_VALUE;
 			}
-			break;
+			return static_cast<HANDLE>(panel);
 		}
 	case OPEN_COMMANDLINE:
 		{
 			Panel *panel = new Panel();
-			if (panel) {
-				std::wstring cmd = reinterpret_cast<OpenCommandLineInfo*>(OInfo->Data)->CommandLine;
-				if (!panel->openFromCommandLine(cmd)) {
-					delete panel;
-					return INVALID_HANDLE_VALUE;
-				}
-				return static_cast<HANDLE>(panel);
+			std::wstring cmd = reinterpret_cast<OpenCommandLineInfo*>(OInfo->Data)->CommandLine;
+			if (!panel->openFromCommandLine(cmd)) {
+				delete panel;
+				return INVALID_HANDLE_VALUE;
 			}
-			break;
+			return static_cast<HANDLE>(panel);
 		}
 	}
 	return nullptr;

@@ -67,10 +67,10 @@ std::wstring DescrDialog::getEditedText(DescrDialog::ItemIndex index) {
 	size_t nChars;
 	wchar_t *text;
 
-	nChars = ::Info.SendDlgMessage(m_hDlg, DM_GETTEXT, index, nullptr);
+	nChars = ::Info.SendDlgMessage(m_hDlg, DM_GETTEXT, (intptr_t)index, nullptr);
 	text = new wchar_t[nChars+1];
 	data.PtrData = text;
-	::Info.SendDlgMessage(m_hDlg, DM_GETTEXT, index, &data);
+	::Info.SendDlgMessage(m_hDlg, DM_GETTEXT, (intptr_t)index, &data);
 	std::wstring res(data.PtrData, data.PtrLength);
 	delete[] text;
 	return res;
