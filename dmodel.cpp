@@ -52,20 +52,18 @@ void DescrDb::load(const std::wstring &filename) {
 		return;
 	size_t fileSize = static_cast<size_t>(llFileSize);
 
-	std::vector<wchar_t> buf;
-	buf.resize(fileSize * 2);
-	if (MultiByteToWideChar(CP_OEMCP, 0, m.value(), (int)fileSize, &buf[0], (int)buf.size()) == 0)
+	std::wstring buf = oem2ucs(m.value(), fileSize);
+	if (buf.empty())
 		return;
 
 	enum {FILENAME, QUOTE, SPACE, DESCR, TAGS} state = FILENAME;
 	std::wstring item;
+	std::string markerOem = ucs2oem(Opt.TagMarker);
 	ItemData data;
-	const wchar_t *pBuf = &buf[0]; //pointer to current character
-	const wchar_t *pItem = pBuf;   //the beginning of currently parsed item
-	const wchar_t *pTagMarker;     //current matching character in TagMarker
-	size_t iTagMarker;             //the number of matched characters
-	size_t nBuf = buf.size();
-	for (size_t i=0; i<nBuf; i++, pBuf++) {
+	std::wstring::const_iterator pItem = buf.begin(); //the beginning of currently parsed item
+	std::string::const_iterator pMarker;              //current matching character in markerOem
+	const char *pOem = m.value();
+	for (std::wstring::const_iterator pBuf = buf.begin(); pBuf != buf.end(); ++pBuf, ++pOem) {
 		wchar_t c = *pBuf;
 		switch (state) {
 		case FILENAME:
@@ -114,13 +112,12 @@ void DescrDb::load(const std::wstring &filename) {
 				break;
 			default:
 				pItem = pBuf;
-				if (Opt.TagMarker.empty()) {
+				if (markerOem.empty()) {
 					state = TAGS;
 				}
 				else {
 					state = DESCR;
-					pTagMarker = Opt.TagMarker.c_str();
-					iTagMarker = 0;
+					pMarker = markerOem.begin();
 					goto testMarkerChar;
 				}
 				break;
@@ -140,18 +137,16 @@ void DescrDb::load(const std::wstring &filename) {
 				break;
 			default:
 testMarkerChar:
-				if (c == *pTagMarker) {
-					pTagMarker++;
-					if (++iTagMarker == Opt.TagMarker.size()) {
-						data.text = std::wstring(pItem, pBuf - iTagMarker + 1);
+				if (*pOem == *pMarker) {
+					if (++pMarker == markerOem.end()) {
+						data.text = std::wstring(pItem, pBuf - markerOem.size() + 1);
 						rtrim(data.text);
 						state = TAGS;
 						pItem = pBuf + 1;
 					}
 				}
 				else {
-					pTagMarker = Opt.TagMarker.c_str();
-					iTagMarker = 0;
+					pMarker = markerOem.begin();
 				}
 				break;
 			}
@@ -208,19 +203,15 @@ bool DescrDb::save(const std::wstring &filename) const {
 		}
 	}
 
+	std::string buf = ucs2oem(text);
+
 	bool bFileExists = GetFileAttributes(filename.c_str()) != DWORD(-1);
-	if (text.empty() && bFileExists) {
-		return DeleteFileW(filename.c_str()) != FALSE;
-	}
-
-	int sizeRequired = WideCharToMultiByte(CP_OEMCP, 0, text.c_str(), (int)text.size(),
-										   nullptr, 0, nullptr, nullptr);
-	if (sizeRequired <= 0)
+	if (buf.empty()) {
+		if (bFileExists) {
+			return DeleteFileW(filename.c_str()) != FALSE;
+		}
 		return true;
-
-	char *buf = new char[sizeRequired];
-	WideCharToMultiByte(CP_OEMCP, 0, text.c_str(), (int)text.size(),
-						buf, sizeRequired, nullptr, nullptr);
+	}
 
 	HANDLE hFile = CreateFileW(filename.c_str(), GENERIC_WRITE, 0, nullptr,
 							(bFileExists) ? TRUNCATE_EXISTING : CREATE_NEW,
@@ -228,10 +219,9 @@ bool DescrDb::save(const std::wstring &filename) const {
 	bool res = false;
 	if (hFile != INVALID_HANDLE_VALUE) {
 		DWORD nWritten;
-		res = WriteFile(hFile, buf, sizeRequired, &nWritten, nullptr) != FALSE;
+		res = WriteFile(hFile, buf.c_str(), (DWORD)buf.size(), &nWritten, nullptr) != FALSE;
 		CloseHandle(hFile);
 	}
-	delete[] buf;
 	return res;
 }
 

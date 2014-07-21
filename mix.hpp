@@ -19,3 +19,7 @@ extern struct Options Opt;
 
 int Config(const ConfigureInfo* CInfo);
 const wchar_t *GetMsg(int MsgId);
+
+std::string ucs2oem(const std::wstring &s);
+std::wstring oem2ucs(const char *s, size_t nChars);
+std::wstring oem2ucs(const std::string &s);
