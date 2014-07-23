@@ -14,7 +14,7 @@ public:
 		REPLACE  ///< replace tags
 	};
 
-	DescrDialog(const Tags &tags, bool dizEnabled, 
+	DescrDialog(const Tags &tags, bool dizEnabled,
 		Tags &tagsToSet, Tags &tagsToClear, std::wstring &text);
 	virtual ~DescrDialog();
 	Result show();
@@ -39,7 +39,7 @@ private:
 	std::wstring &m_text;
 	HANDLE m_hDlg;
 
-	intptr_t dlgProc (intptr_t Msg, intptr_t Param1, void* Param2);
+	intptr_t dlgProc(intptr_t Msg, intptr_t Param1, void* Param2);
 	static intptr_t WINAPI dlgWrapper(HANDLE hDlg, intptr_t Msg, intptr_t Param1, void* Param2);
 	void setEditFields();
 	void applyEditFields();

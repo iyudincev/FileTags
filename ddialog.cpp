@@ -6,7 +6,7 @@
 #include "mix.hpp"
 
 
-DescrDialog::DescrDialog(const Tags &tags, bool dizEnabled, 
+DescrDialog::DescrDialog(const Tags &tags, bool dizEnabled,
 	Tags &tagsToSet, Tags &tagsToClear, std::wstring &text) :
 	m_tags(tags), m_dizEnabled(dizEnabled),
 	m_tagsToSet(tagsToSet), m_tagsToClear(tagsToClear),
@@ -95,7 +95,7 @@ DescrDialog::Result DescrDialog::show() {
 	}
 }
 
-intptr_t DescrDialog::dlgProc (intptr_t Msg, intptr_t Param1, void* Param2) {
+intptr_t DescrDialog::dlgProc(intptr_t Msg, intptr_t Param1, void* Param2) {
 	bool bReplace;
 
 	switch (Msg) {

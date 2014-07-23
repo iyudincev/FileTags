@@ -2,17 +2,17 @@
 #include <windows.h>
 
 
-class KFile{
+class KFile {
 private:
 	HANDLE hFile;
 public:
-	KFile(){hFile = INVALID_HANDLE_VALUE;}
+	KFile() : hFile(INVALID_HANDLE_VALUE) {}
 
-	~KFile(){
+	~KFile() {
 		close();
 	}
 
-	HANDLE handle() const{
+	HANDLE handle() const {
 		return hFile;
 	}
 
@@ -20,7 +20,7 @@ public:
 		return hFile != INVALID_HANDLE_VALUE;
 	}
 
-	bool open(const wchar_t* path){
+	bool open(const wchar_t* path) {
 		hFile = CreateFile (path,
 			GENERIC_READ,
 			FILE_SHARE_DELETE|FILE_SHARE_READ|FILE_SHARE_WRITE,
@@ -31,7 +31,7 @@ public:
 		return isOpened();
 	}
 
-	void close(){
+	void close() {
 		if(hFile != INVALID_HANDLE_VALUE)
 			CloseHandle(hFile);
 		hFile = INVALID_HANDLE_VALUE;
@@ -49,16 +49,17 @@ class KMapping{
 private:
 	HANDLE hMapping;
 public:
-	KMapping(){hMapping = 0;}
-	~KMapping(){
+	KMapping() : hMapping(0) {}
+
+	~KMapping() {
 		close();
 	}
 
-	HANDLE handle() const{
+	HANDLE handle() const {
 		return hMapping;
 	}
 
-	bool open(const KFile& file){
+	bool open(const KFile& file) {
 		hMapping = CreateFileMapping(file.handle(), 0, PAGE_READONLY, 0, 0, 0);
 		return hMapping!=0;
 	}
@@ -70,26 +71,26 @@ public:
 	}
 };
 
-class KViewOfFile{
+class KViewOfFile {
 private:
 	const char* MappingAddr;
 public:
-	KViewOfFile(){MappingAddr = nullptr;}
+	KViewOfFile() : MappingAddr(nullptr) {}
 
-	~KViewOfFile(){
+	~KViewOfFile() {
 		close();
 	}
 
-	const char* value() const{
+	const char* value() const {
 		return MappingAddr;
 	}
 
-	bool isOpened(){
+	bool isOpened() {
 		return MappingAddr != nullptr;
 	}
 
-	bool open(const KMapping& mapping){
-		MappingAddr = (const char*)MapViewOfFile(mapping.handle(), FILE_MAP_READ, 0, 0, 0);;
+	bool open(const KMapping& mapping) {
+		MappingAddr = (const char*)MapViewOfFile(mapping.handle(), FILE_MAP_READ, 0, 0, 0);
 		return isOpened();
 	}
 
@@ -100,33 +101,33 @@ public:
 	}
 };
 
-class KFileMapping{
+class KFileMapping {
 private:
 	KFile file;
 	KMapping mapping;
 	KViewOfFile view;
 
 public:
-	KFileMapping(){}
+	KFileMapping() {}
 
-	~KFileMapping(){
+	~KFileMapping() {
 		close();
 	}
 
-	void close(){
+	void close() {
 		view.close();
 		mapping.close();
 		file.close();
 	}
 
-	bool open(const wchar_t* path){
+	bool open(const wchar_t* path) {
 		if(file.open(path) && mapping.open(file) && view.open(mapping))
 			return true;
 		close();
 		return false;
 	}
 
-	const char* value() const{
+	const char* value() const {
 		return view.value();
 	}
 
