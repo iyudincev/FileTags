@@ -346,14 +346,14 @@ void Panel::editTags() {
 	case DescrDialog::SET:
 		db.modify(selectedFiles, bModifyText, dizText, commonTags, removedTags);
 		updateVisibleItems();
-		::Info.PanelControl(this, FCTL_UPDATEPANEL, 1, nullptr);
+		::Info.PanelControl(this, FCTL_UPDATEPANEL, 0, nullptr);
 		::Info.PanelControl(this, FCTL_REDRAWPANEL, 0, nullptr);
 		saveDescr();
 		break;
 	case DescrDialog::REPLACE:
 		db.modify(selectedFiles, bModifyText, dizText, commonTags);
 		updateVisibleItems();
-		::Info.PanelControl(this, FCTL_UPDATEPANEL, 1, nullptr);
+		::Info.PanelControl(this, FCTL_UPDATEPANEL, 0, nullptr);
 		::Info.PanelControl(this, FCTL_REDRAWPANEL, 0, nullptr);
 		saveDescr();
 		break;
