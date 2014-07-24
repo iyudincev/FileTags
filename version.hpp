@@ -5,5 +5,5 @@
 #define PLUGIN_FILENAME L"FileTags.dll"
 #define PLUGIN_AUTHOR L"Igor Yudincev"
 #define PLUGIN_MAJOR 1
-#define PLUGIN_MINOR 5
-#define PLUGIN_VERSION L"1.5"
+#define PLUGIN_MINOR 6
+#define PLUGIN_VERSION L"1.6"

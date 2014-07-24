@@ -1,3 +1,6 @@
+1.6 24.07.2014 
+* clear selection after editing tags
+
 1.5 21.07.2014
 * fix of marker encoding bug
 * delete empty descript.ion
