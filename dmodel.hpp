@@ -19,6 +19,7 @@ public:
 	void clear() {
 		m_tags.clear();
 		m_items.clear();
+		m_bLoadedUtf8 = true;
 	}
 	/// get all tags
 	const Tags &getTags() const {
@@ -69,4 +70,5 @@ private:
 
 	Tags m_tags;
 	Items m_items;
+	bool m_bLoadedUtf8;
 };

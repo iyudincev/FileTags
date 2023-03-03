@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 #include "plugin.hpp"
 
 struct Options {
@@ -20,6 +21,9 @@ extern struct Options Opt;
 int Config(const ConfigureInfo* CInfo);
 const wchar_t *GetMsg(int MsgId);
 
-std::string ucs2oem(const std::wstring &s);
-std::wstring oem2ucs(const char *s, size_t nChars);
-std::wstring oem2ucs(const std::string &s);
+std::vector<char> ucs2oem(const std::wstring &s);
+std::vector<char> ucs2utf(const std::wstring &s);
+std::wstring oem2ucs(const char *buf, size_t nChars);
+std::wstring oem2ucs(const std::vector<char> &buf);
+std::wstring utf2ucs(const char *buf, size_t nChars);
+std::wstring utf2ucs(const std::vector<char> &buf);

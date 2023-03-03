@@ -10,6 +10,24 @@ static void rtrim(std::wstring &s) {
 	s.erase(s.find_last_not_of(L" \n\r\t") + 1);
 }
 
+static bool isStringOemSafe(std::wstring &s) {
+	return oem2ucs(ucs2oem(s)) == s;
+}
+
+static void decodeBytes(const char *buf, size_t nBytes, std::wstring &result, bool &bUtf8) {
+	bUtf8 = nBytes >= 3 && buf[0] == '\xEF' && buf[1] == '\xBB' && buf[2] == '\xBF';
+	if (bUtf8)
+		result = utf2ucs(buf + 3, nBytes - 3);
+	else
+		result = oem2ucs(buf, nBytes);
+}
+
+static std::vector<char> convertToBytes(const std::wstring &text, bool bUtf8) {
+	if (bUtf8) 
+		return ucs2utf(L"\xFEFF" + text);
+	return ucs2oem(text);
+}
+
 bool DescrDb::ItemData::empty() const {
 	return (Opt.TagMarker.empty()) ?
 		tags.empty() :
@@ -52,18 +70,17 @@ void DescrDb::load(const std::wstring &filename) {
 		return;
 	size_t fileSize = static_cast<size_t>(llFileSize);
 
-	std::wstring buf = oem2ucs(m.value(), fileSize);
+	std::wstring buf;
+	decodeBytes(m.value(), fileSize, buf, m_bLoadedUtf8);
 	if (buf.empty())
 		return;
 
 	enum {FILENAME, QUOTE, SPACE, DESCR, TAGS} state = FILENAME;
 	std::wstring item;
-	std::string markerOem = ucs2oem(Opt.TagMarker);
 	ItemData data;
 	std::wstring::const_iterator pItem = buf.begin(); //the beginning of currently parsed item
-	std::string::const_iterator pMarker;              //current matching character in markerOem
-	const char *pOem = m.value();
-	for (std::wstring::const_iterator pBuf = buf.begin(); pBuf != buf.end(); ++pBuf, ++pOem) {
+	std::wstring::const_iterator pMarker;             //current matching character in marker
+	for (std::wstring::const_iterator pBuf = buf.begin(); pBuf != buf.end(); ++pBuf) {
 		wchar_t c = *pBuf;
 		switch (state) {
 		case FILENAME:
@@ -112,12 +129,12 @@ void DescrDb::load(const std::wstring &filename) {
 				break;
 			default:
 				pItem = pBuf;
-				if (markerOem.empty()) {
+				if (Opt.TagMarker.empty()) {
 					state = TAGS;
 				}
 				else {
 					state = DESCR;
-					pMarker = markerOem.begin();
+					pMarker = Opt.TagMarker.begin();
 					goto testMarkerChar;
 				}
 				break;
@@ -137,16 +154,16 @@ void DescrDb::load(const std::wstring &filename) {
 				break;
 			default:
 testMarkerChar:
-				if (*pOem == *pMarker) {
-					if (++pMarker == markerOem.end()) {
-						data.text = std::wstring(pItem, pBuf - markerOem.size() + 1);
+				if (c == *pMarker) {
+					if (++pMarker == Opt.TagMarker.end()) {
+						data.text = std::wstring(pItem, pBuf - Opt.TagMarker.size() + 1);
 						rtrim(data.text);
 						state = TAGS;
 						pItem = pBuf + 1;
 					}
 				}
 				else {
-					pMarker = markerOem.begin();
+					pMarker = Opt.TagMarker.begin();
 				}
 				break;
 			}
@@ -169,6 +186,7 @@ testMarkerChar:
 }
 
 bool DescrDb::save(const std::wstring &filename) const {
+	bool bSaveUtf8 = m_bLoadedUtf8 || !isStringOemSafe(Opt.TagMarker); //force UTF-8 if the marker can't be saved in an OEM encoded file
 	std::wstring text;
 	for (Items::const_iterator it = m_items.begin(); it != m_items.end(); ++it) {
 		std::wstring item = (*it).first;
@@ -203,10 +221,11 @@ bool DescrDb::save(const std::wstring &filename) const {
 		}
 	}
 
-	std::string buf = ucs2oem(text);
+	std::vector<char> buf = convertToBytes(text, bSaveUtf8);
 
-	bool bFileExists = GetFileAttributes(filename.c_str()) != DWORD(-1);
-	if (buf.empty()) {
+	DWORD fileAttributes = GetFileAttributes(filename.c_str());
+	bool bFileExists = fileAttributes != DWORD(-1);
+	if (text.empty()) {
 		if (bFileExists) {
 			return DeleteFileW(filename.c_str()) != FALSE;
 		}
@@ -219,8 +238,11 @@ bool DescrDb::save(const std::wstring &filename) const {
 	bool res = false;
 	if (hFile != INVALID_HANDLE_VALUE) {
 		DWORD nWritten;
-		res = WriteFile(hFile, buf.c_str(), (DWORD)buf.size(), &nWritten, nullptr) != FALSE;
+		res = WriteFile(hFile, &(*buf.begin()), (DWORD)buf.size(), &nWritten, nullptr) != FALSE;
 		CloseHandle(hFile);
+		if (fileAttributes & FILE_ATTRIBUTE_HIDDEN) {
+			SetFileAttributes(filename.c_str(), FILE_ATTRIBUTE_HIDDEN);
+		}
 	}
 	return res;
 }

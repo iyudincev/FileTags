@@ -173,7 +173,7 @@ const wchar_t *Panel::buildCaption() {
 }
 
 intptr_t Panel::ProcessKey(const INPUT_RECORD *Rec) {
-	if (!(Rec->EventType == KEY_EVENT || Rec->EventType == FARMACRO_KEY_EVENT))
+	if (Rec->EventType != KEY_EVENT)
 		return FALSE;
 
 	WORD key = Rec->Event.KeyEvent.wVirtualKeyCode;

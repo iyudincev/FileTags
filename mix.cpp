@@ -32,8 +32,8 @@ int Config(const ConfigureInfo* CInfo) {
 	return 0;
 }
 
-std::string ucs2oem(const std::wstring &s) {
-	std::string result;
+std::vector<char> ucs2oem(const std::wstring &s) {
+	std::vector<char> result;
 
 	int sizeRequired = WideCharToMultiByte(CP_OEMCP, 0, s.c_str(), (int)s.size(),
 		nullptr, 0, nullptr, nullptr);
@@ -46,11 +46,25 @@ std::string ucs2oem(const std::wstring &s) {
 	return result;
 }
 
-std::wstring oem2ucs(const char *s, size_t nChars) {
+std::vector<char> ucs2utf(const std::wstring &s) {
+	std::vector<char> result;
+
+	int sizeRequired = WideCharToMultiByte(CP_UTF8, 0, s.c_str(), (int)s.size(),
+		nullptr, 0, nullptr, nullptr);
+	if (sizeRequired > 0) {
+		result.resize(sizeRequired);
+		WideCharToMultiByte(CP_UTF8, 0, s.c_str(), (int)s.size(),
+			&(*result.begin()), sizeRequired, nullptr, nullptr);
+	}
+
+	return result;
+}
+
+std::wstring oem2ucs(const char *buf, size_t nChars) {
 	std::wstring result;
 	if (nChars != 0) {
 		result.resize(nChars);
-		if (MultiByteToWideChar(CP_OEMCP, 0, s, (int)nChars,
+		if (MultiByteToWideChar(CP_OEMCP, 0, buf, (int)nChars,
 			&(*result.begin()), (int)nChars) == 0)
 		{
 			result.clear();
@@ -59,6 +73,23 @@ std::wstring oem2ucs(const char *s, size_t nChars) {
 	return result;
 }
 
-std::wstring oem2ucs(const std::string &s) {
-	return oem2ucs(s.c_str(), s.size());
+std::wstring oem2ucs(const std::vector<char> &buf) {
+	return oem2ucs(&(*buf.begin()), buf.size());
+}
+
+std::wstring utf2ucs(const char *buf, size_t nChars) {
+	std::wstring result;
+	if (nChars != 0) {
+		result.resize(nChars);
+		if (MultiByteToWideChar(CP_UTF8, 0, buf, (int)nChars,
+			&(*result.begin()), (int)nChars) == 0)
+		{
+			result.clear();
+		}
+	}
+	return result;
+}
+
+std::wstring utf2ucs(const std::vector<char> &buf) {
+	return utf2ucs(&(*buf.begin()), buf.size());
 }
