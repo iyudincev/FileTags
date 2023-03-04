@@ -1,3 +1,5 @@
+#pragma once
+
 #include "farversion.hpp"
 
 #define PLUGIN_DESC L"FileTags plugin for FAR Manager 3"
@@ -5,5 +7,5 @@
 #define PLUGIN_FILENAME L"FileTags.dll"
 #define PLUGIN_AUTHOR L"Igor Yudincev"
 #define PLUGIN_MAJOR 1
-#define PLUGIN_MINOR 6
-#define PLUGIN_VERSION L"1.6"
+#define PLUGIN_MINOR 7
+#define PLUGIN_VERSION L"1.7"

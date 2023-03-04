@@ -1,3 +1,7 @@
+1.7 04.03.2023
++ accept UTF-8 encoded description files
++ show files by exact tag list match
+
 1.6 24.07.2014 
 * clear selection after editing tags
 
