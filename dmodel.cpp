@@ -23,7 +23,7 @@ static void decodeBytes(const char *buf, size_t nBytes, std::wstring &result, bo
 }
 
 static std::vector<char> convertToBytes(const std::wstring &text, bool bUtf8) {
-	if (bUtf8) 
+	if (bUtf8)
 		return ucs2utf(L"\xFEFF" + text);
 	return ucs2oem(text);
 }
@@ -75,6 +75,8 @@ void DescrDb::load(const std::wstring &filename) {
 	if (buf.empty())
 		return;
 
+	bool bTagOemSafe = isStringOemSafe(Opt.TagMarker);
+
 	enum {FILENAME, QUOTE, SPACE, DESCR, TAGS} state = FILENAME;
 	std::wstring item;
 	ItemData data;
@@ -82,6 +84,7 @@ void DescrDb::load(const std::wstring &filename) {
 	std::wstring::const_iterator pMarker;             //current matching character in marker
 	for (std::wstring::const_iterator pBuf = buf.begin(); pBuf != buf.end(); ++pBuf) {
 		wchar_t c = *pBuf;
+		bool bMarkerChar;
 		switch (state) {
 		case FILENAME:
 			switch (c) {
@@ -154,7 +157,13 @@ void DescrDb::load(const std::wstring &filename) {
 				break;
 			default:
 testMarkerChar:
-				if (c == *pMarker) {
+				if (m_bLoadedUtf8 || bTagOemSafe) {
+					bMarkerChar = c == *pMarker;
+				}
+				else {
+					bMarkerChar = ucs2oem(std::wstring(1, c)) == ucs2oem(std::wstring(1, *pMarker));
+				}
+				if (bMarkerChar) {
 					if (++pMarker == Opt.TagMarker.end()) {
 						data.text = std::wstring(pItem, pBuf - Opt.TagMarker.size() + 1);
 						rtrim(data.text);

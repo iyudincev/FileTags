@@ -317,10 +317,10 @@
     <ClCompile Include="folder.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="mix.cpp" />
-    <ClCompile Include="panelnotifier.cpp" />
     <ClCompile Include="filetags.cpp" />
     <ClCompile Include="panel.cpp" />
     <ClCompile Include="panelitemslist.cpp" />
+    <ClCompile Include="panelnotifier.cpp" />
     <ClCompile Include="tags.cpp" />
     <ClCompile Include="watchdir.cpp" />
   </ItemGroup>
@@ -331,11 +331,11 @@
     <ClInclude Include="folder.hpp" />
     <ClInclude Include="mapping.hpp" />
     <ClInclude Include="mix.hpp" />
-    <ClCompile Include="panelnotifier.hpp" />
     <ClInclude Include="filetagslng.hpp" />
     <ClInclude Include="guid.hpp" />
     <ClInclude Include="panel.hpp" />
     <ClInclude Include="panelitemslist.hpp" />
+    <ClInclude Include="panelnotifier.hpp" />
     <ClInclude Include="tags.hpp" />
     <ClInclude Include="version.hpp" />
     <ClInclude Include="watchdir.hpp" />
