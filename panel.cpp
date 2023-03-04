@@ -282,7 +282,8 @@ intptr_t Panel::ProcessSync(intptr_t Event) {
 }
 
 void Panel::notify() {
-	updateVisibleItems();
+	db.load(getDescrPath());
+	read();
 	::Info.PanelControl(this, FCTL_UPDATEPANEL, 1, nullptr);
 	::Info.PanelControl(this, FCTL_REDRAWPANEL, 0, nullptr);
 }
