@@ -6,6 +6,9 @@
 "FileTags"
 
 "FileTags: Config"
+"Show file in panel if its tag list:"
+"&includes the panel filter"
+"exactly &matches the panel filter"
 "&Remember panel mode"
 "Tag list marker:"
 

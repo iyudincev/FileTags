@@ -2,7 +2,7 @@
 .PluginContents=FileTags
 
 @Contents
-$   #FileTags 1.6 for FAR Manager 3#
+$   #FileTags 1.7 for FAR Manager 3#
 
    The plugin implements file tags management within a single directory.
 File tags are stored in file descriptions; the plugin takes the description of
@@ -41,7 +41,7 @@ tags from the working plugin panel filter.
 
    #F8# on a tag removes it from all files shown on panel at the moment.
 
-   Tags cannot be renamed with F6; use the ~tags editing dialog~@Description@ (CtrlZ)
+   Tags cannot be renamed with F6; use the ~tags editing dialog~@Description@ (#CtrlZ#)
 for these operations.
 
 @CommandLine
@@ -105,16 +105,20 @@ it is also copied to #Add tags:# text field.
 @Config
 $   #Plugin settings#
 
-  #Remember panel mode# - store the user-selected panel mode and restore it
-                        next time the plugin is opened. When the option is off,
-                        the current file panel mode is used.
+  #Show file in panel if its tag list:# - this option defines how the panel filter works.
+                        The current mode is displayed in the panel caption
+                        (square brackets around the caption denote filter by exact tag match).
 
   #Tag list marker#     - sequence of characters in file description string which
                         indicates the presence of a tag list for the file. The part
                         of the string before the marker is considered as description text,
                         the part after is treated as comma-separated list of file tags.
                         If the marker is not specified then the whole description string
-                        is treated as list of tags.
+                        is treated as list of tags, so the description text is unavailable.
+
+  #Remember panel mode# - store the user-selected panel mode and restore it
+                        next time the plugin is opened. When the option is off,
+                        the current file panel mode is used.
 
 
  ~Features~@Contents@

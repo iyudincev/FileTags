@@ -8,10 +8,10 @@
 
 
 /// directory contents
-class Folder {
+class FolderContent {
 public:
-	Folder();
-	Folder(const std::wstring &dir);
+	FolderContent();
+	FolderContent(const std::wstring &dir);
 
 	const std::wstring &getDirName() const {
 		return dirName;

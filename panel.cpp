@@ -9,11 +9,13 @@
 Panel::Panel() :
 	cursorPos(0)
 {
-	folder = new Folder();
+	folder = new FolderContent();
 	dcn = new DirChangeNotifier(folder->getDirName().c_str(), this);
+	notifier.addListener(this);
 }
 
 Panel::~Panel() {
+	notifier.removeListener(this);
 	delete dcn;
 	delete folder;
 }
@@ -114,7 +116,13 @@ void Panel::updateVisibleItems() {
 		std::wstring path = folder->getDirName() + L"\\" + filename;
 		const Tags &fileTags = db.getTagsByName(filename);
 
-		if (fileTags.includes(filterTags)) {
+		bool bItemHasFilterTags = fileTags.includes(filterTags);
+		bool bIncludeItem = bItemHasFilterTags;
+		if (Opt.ExactMatch) {
+			bIncludeItem = bIncludeItem && filterTags.includes(fileTags);
+		}
+
+		if (bIncludeItem) {
 			PluginPanelItem shownItem = ppi;
 			shownItem.FileName = _wcsdup(path.c_str());
 			shownItem.AlternateFileName = _wcsdup(ppi.AlternateFileName);
@@ -123,6 +131,8 @@ void Panel::updateVisibleItems() {
 			shownItem.CustomColumnData = nullptr;
 
 			visibleItems.add(shownItem);
+		}
+		if (bItemHasFilterTags) {
 			for (Tags::const_iterator it = fileTags.begin(); it != fileTags.end(); ++it)
 				if (filterTags.find(*it) == filterTags.end())
 					tmpTags.insert(*it);
@@ -169,6 +179,9 @@ const wchar_t *Panel::buildPrompt() {
 
 const wchar_t *Panel::buildCaption() {
 	caption = L"Tags:" + getPath();
+	if (Opt.ExactMatch) {
+		caption = L"[" + caption + L"]";
+	}
 	return caption.c_str();
 }
 
@@ -219,7 +232,7 @@ intptr_t Panel::ProcessEvent(intptr_t Event, void *Param) {
 		}
 
 		if (dcn->isModified()) {
-			Folder* newFolder = new Folder(folder->getDirName());
+			FolderContent* newFolder = new FolderContent(folder->getDirName());
 			newFolder->read();
 
 			bool bModified = false;
@@ -266,6 +279,12 @@ intptr_t Panel::ProcessSync(intptr_t Event) {
 		::Info.PanelControl(this, FCTL_REDRAWPANEL, 0, nullptr);
 	}
 	return 0;
+}
+
+void Panel::notify() {
+	updateVisibleItems();
+	::Info.PanelControl(this, FCTL_UPDATEPANEL, 1, nullptr);
+	::Info.PanelControl(this, FCTL_REDRAWPANEL, 0, nullptr);
 }
 
 void Panel::createTag() {

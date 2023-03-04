@@ -7,6 +7,9 @@ enum LngFileIndex {
 	MPluginsCfgMenuString,
 
 	MConfigTitle,
+	MConfigMatch,
+	MConfigIncludesFilter,
+	MConfigEqualsFilter,
 	MConfigStorePanelMode,
 	MConfigTagMarker,
 

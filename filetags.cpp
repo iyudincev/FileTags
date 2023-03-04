@@ -46,6 +46,7 @@ struct Options Opt;
 struct PluginStartupInfo Info;
 struct FarStandardFunctions FSF;
 
+PanelNotifier notifier;
 
 void WINAPI GetGlobalInfoW(struct GlobalInfo *Info)
 {
@@ -65,6 +66,7 @@ void WINAPI SetStartupInfoW(const struct PluginStartupInfo *Info)
 	::Info.FSF=&::FSF;
 
 	PluginSettings settings(MainGuid, ::Info.SettingsControl);
+	Opt.ExactMatch = settings.Get(0, OptionExactMatch, 0);
 	Opt.TagMarker = settings.Get(0, OptionTagMarker, L"");
 	Opt.StorePanelMode = settings.Get(0, OptionStorePanelMode, 1);
 	Opt.PanelMode = settings.Get(0, OptionPanelMode, 6);

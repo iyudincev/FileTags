@@ -2,7 +2,7 @@
 #include "mix.hpp"
 
 
-Folder::Folder() {
+FolderContent::FolderContent() {
 	size_t bufSize = ::Info.PanelControl(PANEL_ACTIVE, FCTL_GETPANELDIRECTORY, 0, nullptr);
 	FarPanelDirectory* dirInfo = reinterpret_cast<FarPanelDirectory*>(malloc(bufSize));
 	dirInfo->StructSize = sizeof(FarPanelDirectory);
@@ -11,12 +11,12 @@ Folder::Folder() {
 	free(dirInfo);
 }
 
-Folder::Folder(const std::wstring &dir) :
+FolderContent::FolderContent(const std::wstring &dir) :
 	dirName(dir)
 {
 }
 
-bool Folder::read() {
+bool FolderContent::read() {
 	items.clear();
 	name2item.clear();
 

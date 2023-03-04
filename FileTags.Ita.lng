@@ -8,6 +8,9 @@
 " Etichette Files"
 
 "Configura Etichette Files"
+"Show file in panel if its tag list:"
+"&includes the panel filter"
+"exactly &matches the panel filter"
 "&Ricorda Modo Pannello"
 "Tag list marker:"
 

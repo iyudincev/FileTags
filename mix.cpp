@@ -11,20 +11,31 @@ const wchar_t *GetMsg(int MsgId) {
 }
 
 int Config(const ConfigureInfo* CInfo) {
+	const int configMatchIds[] = {
+		MConfigIncludesFilter,
+		MConfigEqualsFilter,
+	};
 	wchar_t tagMarker[256];
 	wcsncpy_s(tagMarker, Opt.TagMarker.c_str(), ARRAYSIZE(tagMarker)-1);
 
 	PluginDialogBuilder Builder(::Info, MainGuid, ConfigDialogGuid, MConfigTitle, L"Config");
+	Builder.AddText(MConfigMatch);
+	Builder.AddRadioButtons(&Opt.ExactMatch, ARRAYSIZE(configMatchIds), configMatchIds);
+	Builder.AddSeparator();
 	Builder.AddText(MConfigTagMarker);
-	Builder.AddEditField(tagMarker, ARRAYSIZE(tagMarker), 30);
+	Builder.AddEditField(tagMarker, ARRAYSIZE(tagMarker), 20);
+	Builder.AddSeparator();
 	Builder.AddCheckbox(MConfigStorePanelMode, &Opt.StorePanelMode);
 	Builder.AddOKCancel(MOk, MCancel);
 
 	if (Builder.ShowDialog()) {
 		Opt.TagMarker = tagMarker;
 		PluginSettings settings(MainGuid, ::Info.SettingsControl);
+		settings.Set(0, OptionExactMatch, Opt.ExactMatch);
 		settings.Set(0, OptionTagMarker, tagMarker);
 		settings.Set(0, OptionStorePanelMode, Opt.StorePanelMode);
+
+		notifier.notify();
 
 		return 1;
 	}

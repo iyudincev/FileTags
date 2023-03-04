@@ -28,6 +28,7 @@ public:
 	intptr_t ProcessKey(const INPUT_RECORD *Rec);
 	intptr_t ProcessEvent(intptr_t Event, void *Param);
 	intptr_t ProcessSync(intptr_t Event);
+	void notify();
 
 private:
 	Tags filterTags;
@@ -37,7 +38,7 @@ private:
 	std::wstring prompt;
 	std::wstring caption;
 	DescrDb db;
-	Folder *folder;
+	FolderContent *folder;
 	DirChangeNotifier *dcn;
 	size_t cursorPos;
 
